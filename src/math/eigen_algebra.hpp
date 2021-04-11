@@ -362,6 +362,10 @@ struct EigenAlgebraT {
     return v.squaredNorm();
   }
 
+  EIGEN_ALWAYS_INLINE static auto normalize(const Vector3 &v) {
+    return v.normalized();
+  }
+
   EIGEN_ALWAYS_INLINE static auto normalize(const Quaternion &q) {
     Quaternion v(q);
     Scalar z = q.squaredNorm();

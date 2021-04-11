@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "math/pose.hpp"
+#include "utils/serialization.hpp"
 
 namespace tds {
 enum GeometryTypes {
@@ -33,7 +34,7 @@ enum GeometryTypes {
 };
 
 template <typename Algebra>
-class Geometry {
+class Geometry : public Serializable<Algebra> {
   using Scalar = typename Algebra::Scalar;
   using Vector3 = typename Algebra::Vector3;
 
@@ -43,6 +44,10 @@ class Geometry {
   explicit Geometry(int type) : type(type) {}
   virtual ~Geometry() = default;
   int get_type() const { return type; }
+
+  size_t serialization_size(SerializationMode mode) const override;
+  void serialize(Iter &output, SerializationMode mode) const override;
+  void deserialize(Iter &input, SerializationMode mode) override;
 };
 
 template <typename Algebra>
@@ -63,6 +68,7 @@ class Sphere : public Geometry<Algebra> {
   }
 
   const Scalar &get_radius() const { return radius; }
+  void set_radius(const Scalar &radius) { this->radius = radius; }
 
   Vector3 compute_local_inertia(const Scalar &mass) const {
     Scalar elem = Algebra::fraction(4, 10) * mass * radius * radius;
@@ -90,7 +96,10 @@ class Capsule : public Geometry<Algebra> {
   }
 
   const Scalar &get_radius() const { return radius; }
+  void set_radius(const Scalar &radius) { this->radius = radius; }
+
   const Scalar &get_length() const { return length; }
+  void set_length(const Scalar &length) { this->length = length; }
 
   Vector3 compute_local_inertia(const Scalar &mass) const {
     Scalar lx = Algebra::fraction(2, 1) * (radius);
@@ -131,7 +140,10 @@ class Plane : public Geometry<Algebra> {
   }
 
   const Vector3 &get_normal() const { return normal; }
+  void set_normal(const Vector3 &normal) { this->normal = normal; }
+  
   const Scalar &get_constant() const { return constant; }
+  void set_constant(const Scalar &constant) { this->constant = constant; }
 };
 
 template <typename AlgebraFrom, typename AlgebraTo>
@@ -149,5 +161,82 @@ static TINY_INLINE Geometry<AlgebraTo> *clone(const Geometry<AlgebraFrom> *g) {
   }
   throw std::runtime_error(
       "Unsupported geom type encountered in clone_geom().");
+}
+
+template <typename Algebra>
+size_t Geometry<Algebra>::serialization_size_(SerializationMode mode) const {
+  if (mode | SERIALIZE_GEOMETRY) {
+    switch (get_type()) {
+      case TINY_SPHERE_TYPE:
+        return 1;
+      case TINY_CAPSULE_TYPE:
+        return 2;
+      case TINY_PLANE_TYPE:
+        return 4;
+    }
+  }
+  return 0;
+}
+
+template <typename Algebra>
+void Geometry<Algebra>::serialize_(
+    typename Serializable<Algebra>::Iter &param_iter,
+    SerializationMode mode) const {
+  if (mode | SERIALIZE_GEOMETRY) {
+    switch (get_type()) {
+      case TINY_SPHERE_TYPE:
+        *param_iter = ((Sphere<Algebra> *)this)->get_radius();
+        param_iter = std::next(param_iter);
+        break;
+      case TINY_CAPSULE_TYPE:
+        *param_iter = ((Capsule<Algebra> *)this)->get_radius();
+        param_iter = std::next(param_iter);
+        *param_iter = ((Capsule<Algebra> *)this)->get_length();
+        param_iter = std::next(param_iter);
+        break;
+      case TINY_PLANE_TYPE:
+        const Vector3 &normal = ((const Plane<Algebra> *)this)->get_normal();
+        *param_iter = normal[0];
+        param_iter = std::next(param_iter);
+        *param_iter = normal[1];
+        param_iter = std::next(param_iter);
+        *param_iter = normal[2];
+        param_iter = std::next(param_iter);
+        *param_iter = ((const Plane<Algebra> *)this)->get_constant();
+        param_iter = std::next(param_iter);
+        break;
+    }
+  }
+}
+
+template <typename Algebra>
+void Geometry<Algebra>::deserialize_(
+    typename Serializable<Algebra>::Iter &param_iter, SerializationMode mode) {
+  if (mode | SERIALIZE_GEOMETRY) {
+    switch (get_type()) {
+      case TINY_SPHERE_TYPE:
+        ((Sphere<Algebra> *)this)->set_radius(*param_iter);
+        param_iter = std::next(param_iter);
+        break;
+      case TINY_CAPSULE_TYPE:
+        ((Capsule<Algebra> *)this)->set_radius(*param_iter);
+        param_iter = std::next(param_iter);
+        ((Capsule<Algebra> *)this)->set_length(*param_iter);
+        param_iter = std::next(param_iter);
+        break;
+      case TINY_PLANE_TYPE:
+        Vector3 normal;
+        normal[0] = *param_iter;
+        param_iter = std::next(param_iter);
+        normal[1] = *param_iter;
+        param_iter = std::next(param_iter);
+        normal[2] = *param_iter;
+        param_iter = std::next(param_iter);
+        ((Plane<Algebra> *)this)->set_normal(normal);
+        ((Plane<Algebra> *)this)->set_constant(*param_iter);
+        param_iter = std::next(param_iter);
+        break;
+    }
+  }
 }
 }  // namespace tds
