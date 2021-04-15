@@ -12,6 +12,7 @@ template <typename Algebra>
 struct Serializable {
   using Scalar = typename Algebra::Scalar;
   using Iter = typename std::vector<Scalar>::iterator;
+  using ConstIter = typename std::vector<Scalar>::const_iterator;
 
   virtual void set_serializable(bool s = true) { is_serializable_ = s; }
   virtual bool is_serializable() const { return is_serializable_; }
@@ -28,7 +29,7 @@ struct Serializable {
     }
     serialize_(output, mode);
   }
-  virtual void deserialize(Iter& input, SerializationMode mode) {
+  virtual void deserialize(ConstIter& input, SerializationMode mode) {
     if (!is_serializable_) {
       return;
     }
@@ -38,7 +39,7 @@ struct Serializable {
  protected:
   virtual size_t serialization_size_(SerializationMode mode) const = 0;
   virtual void serialize_(Iter& output, SerializationMode mode) const = 0;
-  virtual void deserialize_(Iter& input, SerializationMode mode) = 0;
+  virtual void deserialize_(ConstIter& input, SerializationMode mode) = 0;
 
   bool is_serializable_{false};
 };

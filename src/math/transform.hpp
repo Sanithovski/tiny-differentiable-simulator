@@ -491,7 +491,7 @@ struct Transform : public Serializable<Algebra> {
 
   void serialize_(Iter &output, SerializationMode mode) const override {
     for (int i = 0; i < 3; ++i) {
-      *output = position[i];
+      *output = translation[i];
       output = std::next(output);
     }
 
@@ -507,21 +507,21 @@ struct Transform : public Serializable<Algebra> {
     output = std::next(output);
   }
 
-  void deserialize_(Iter &input, SerializationMode mode) override {
+  void deserialize_(ConstIter &input, SerializationMode mode) override {
     for (int i = 0; i < 3; ++i) {
-      position[i] = *output;
-      output = std::next(output);
+      translation[i] = *input;
+      input = std::next(input);
     }
 
     // convert rotation to quaternion
-    Scalar qx = *output;
-    output = std::next(output);
-    Scalar qy = *output;
-    output = std::next(output);
-    Scalar qz = *output;
-    output = std::next(output);
-    Scalar qw = *output;
-    output = std::next(output);
+    Scalar qx = *input;
+    input = std::next(input);
+    Scalar qy = *input;
+    input = std::next(input);
+    Scalar qz = *input;
+    input = std::next(input);
+    Scalar qw = *input;
+    input = std::next(input);
     auto quat = Algebra::quat_from_xyzw(qx, qy, qz, qw);
     rotation = Algebra::quat_to_matrix(quat);
   }

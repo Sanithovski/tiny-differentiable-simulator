@@ -45,9 +45,9 @@ class Geometry : public Serializable<Algebra> {
   virtual ~Geometry() = default;
   int get_type() const { return type; }
 
-  size_t serialization_size(SerializationMode mode) const override;
-  void serialize(Iter &output, SerializationMode mode) const override;
-  void deserialize(Iter &input, SerializationMode mode) override;
+  size_t serialization_size_(SerializationMode mode) const override;
+  void serialize_(Iter &output, SerializationMode mode) const override;
+  void deserialize_(ConstIter &input, SerializationMode mode) override;
 };
 
 template <typename Algebra>
@@ -141,7 +141,7 @@ class Plane : public Geometry<Algebra> {
 
   const Vector3 &get_normal() const { return normal; }
   void set_normal(const Vector3 &normal) { this->normal = normal; }
-  
+
   const Scalar &get_constant() const { return constant; }
   void set_constant(const Scalar &constant) { this->constant = constant; }
 };
@@ -179,9 +179,8 @@ size_t Geometry<Algebra>::serialization_size_(SerializationMode mode) const {
 }
 
 template <typename Algebra>
-void Geometry<Algebra>::serialize_(
-    typename Serializable<Algebra>::Iter &param_iter,
-    SerializationMode mode) const {
+void Geometry<Algebra>::serialize_(Iter &param_iter,
+                                   SerializationMode mode) const {
   if (mode | SERIALIZE_GEOMETRY) {
     switch (get_type()) {
       case TINY_SPHERE_TYPE:
@@ -210,8 +209,8 @@ void Geometry<Algebra>::serialize_(
 }
 
 template <typename Algebra>
-void Geometry<Algebra>::deserialize_(
-    typename Serializable<Algebra>::Iter &param_iter, SerializationMode mode) {
+void Geometry<Algebra>::deserialize_(ConstIter &param_iter,
+                                     SerializationMode mode) {
   if (mode | SERIALIZE_GEOMETRY) {
     switch (get_type()) {
       case TINY_SPHERE_TYPE:
