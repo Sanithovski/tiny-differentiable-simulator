@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base.hpp"
+
 #if USE_STAN
 #include <stan/math.hpp>
 #include <stan/math/fwd.hpp>
@@ -22,9 +24,6 @@
 #include "spatial_vector.hpp"
 #undef max
 #undef min
-
-#define _USE_MATH_DEFINES
-#include <cmath>
 
 
 namespace tds {

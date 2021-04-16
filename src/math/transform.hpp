@@ -18,6 +18,8 @@ struct Transform : public Serializable<Algebra> {
   using Matrix6x3 = typename Algebra::Matrix6x3;
   using RigidBodyInertia = tds::RigidBodyInertia<Algebra>;
   using ArticulatedBodyInertia = tds::ArticulatedBodyInertia<Algebra>;
+  using typename Serializable<Algebra>::Iter;
+  using typename Serializable<Algebra>::ConstIter;
   typedef tds::MotionVector<Algebra> MotionVector;
   typedef tds::ForceVector<Algebra> ForceVector;
 
@@ -489,7 +491,7 @@ struct Transform : public Serializable<Algebra> {
     return 7;
   }
 
-  void serialize_(Iter &output, SerializationMode mode) const override {
+  void serialize_(Iter output, SerializationMode mode) const override {
     for (int i = 0; i < 3; ++i) {
       *output = translation[i];
       output = std::next(output);
@@ -507,7 +509,7 @@ struct Transform : public Serializable<Algebra> {
     output = std::next(output);
   }
 
-  void deserialize_(ConstIter &input, SerializationMode mode) override {
+  void deserialize_(ConstIter input, SerializationMode mode) override {
     for (int i = 0; i < 3; ++i) {
       translation[i] = *input;
       input = std::next(input);

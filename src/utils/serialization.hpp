@@ -23,13 +23,13 @@ struct Serializable {
     }
     return serialization_size_(mode);
   }
-  virtual void serialize(Iter& output, SerializationMode mode) const {
+  virtual void serialize(Iter output, SerializationMode mode) const {
     if (!is_serializable_) {
       return;
     }
     serialize_(output, mode);
   }
-  virtual void deserialize(ConstIter& input, SerializationMode mode) {
+  virtual void deserialize(ConstIter input, SerializationMode mode) {
     if (!is_serializable_) {
       return;
     }
@@ -38,8 +38,8 @@ struct Serializable {
 
  protected:
   virtual size_t serialization_size_(SerializationMode mode) const = 0;
-  virtual void serialize_(Iter& output, SerializationMode mode) const = 0;
-  virtual void deserialize_(ConstIter& input, SerializationMode mode) = 0;
+  virtual void serialize_(Iter output, SerializationMode mode) const = 0;
+  virtual void deserialize_(ConstIter input, SerializationMode mode) = 0;
 
   bool is_serializable_{false};
 };

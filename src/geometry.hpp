@@ -19,7 +19,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "math/pose.hpp"
+#include "utils/conversion.hpp"
 #include "utils/serialization.hpp"
 
 namespace tds {
@@ -37,6 +37,8 @@ template <typename Algebra>
 class Geometry : public Serializable<Algebra> {
   using Scalar = typename Algebra::Scalar;
   using Vector3 = typename Algebra::Vector3;
+  using typename Serializable<Algebra>::Iter;
+  using typename Serializable<Algebra>::ConstIter;
 
   int type;
 
@@ -46,8 +48,8 @@ class Geometry : public Serializable<Algebra> {
   int get_type() const { return type; }
 
   size_t serialization_size_(SerializationMode mode) const override;
-  void serialize_(Iter &output, SerializationMode mode) const override;
-  void deserialize_(ConstIter &input, SerializationMode mode) override;
+  void serialize_(Iter output, SerializationMode mode) const override;
+  void deserialize_(ConstIter input, SerializationMode mode) override;
 };
 
 template <typename Algebra>
@@ -179,7 +181,7 @@ size_t Geometry<Algebra>::serialization_size_(SerializationMode mode) const {
 }
 
 template <typename Algebra>
-void Geometry<Algebra>::serialize_(Iter &param_iter,
+void Geometry<Algebra>::serialize_(Iter param_iter,
                                    SerializationMode mode) const {
   if (mode | SERIALIZE_GEOMETRY) {
     switch (get_type()) {
@@ -209,7 +211,7 @@ void Geometry<Algebra>::serialize_(Iter &param_iter,
 }
 
 template <typename Algebra>
-void Geometry<Algebra>::deserialize_(ConstIter &param_iter,
+void Geometry<Algebra>::deserialize_(ConstIter param_iter,
                                      SerializationMode mode) {
   if (mode | SERIALIZE_GEOMETRY) {
     switch (get_type()) {
