@@ -56,11 +56,13 @@ class World {
   RigidBodyConstraintSolver<Algebra>* rb_constraint_solver_{nullptr};
   MultiBodyConstraintSolver<Algebra>* mb_constraint_solver_{nullptr};
 
+  public:
+
   std::vector<RigidBodyContactPoint> rb_contacts_;
   std::vector<std::vector<MultiBodyContactPoint>> mb_contacts_;
 
- public:
-  int num_solver_iterations{50};
+ 
+  int num_solver_iterations{1};
 
   // default contact settings
   Scalar default_friction{Algebra::fraction(5, 10)};
@@ -84,6 +86,10 @@ class World {
     mb_constraint_solver_ = solver;
   }
 
+  MultiBodyConstraintSolver<Algebra>* get_mb_constraint_solver() {
+      return mb_constraint_solver_;
+  }
+
   void clear() {
     for (std::size_t i = 0; i < geoms_.size(); i++) {
       delete geoms_[i];
@@ -103,6 +109,11 @@ class World {
     if (rb_constraint_solver_) {
       delete rb_constraint_solver_;
       rb_constraint_solver_ = nullptr;
+    }
+    if (mb_constraint_solver_)
+    {
+        delete mb_constraint_solver_;
+        mb_constraint_solver_ = nullptr;
     }
   }
 

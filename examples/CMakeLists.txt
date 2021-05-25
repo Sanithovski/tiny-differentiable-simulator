@@ -1,3 +1,4 @@
+SUBDIRS(ars)
 # first the examples that have no dependencies 
 # then examples with only included third_party dependencies
 # at the end, optional complex examples with complicated dependencies (PyTorch, STAN, BOOST etc)
@@ -6,6 +7,13 @@ add_executable(pendulum_example_tiny_gui pendulum_example_gui.cpp  ${TDS_HDRS})
 target_link_libraries(pendulum_example_tiny_gui opengl_window ${CMAKE_DL_LIBS})
 target_compile_definitions(pendulum_example_tiny_gui PRIVATE USE_TINY )
 target_include_directories(pendulum_example_tiny_gui PRIVATE ../src )
+
+add_executable(pendulum_example_tiny pendulum_example.cpp  ${TDS_HDRS})
+target_link_libraries(pendulum_example_tiny)
+target_compile_definitions(pendulum_example_tiny PRIVATE USE_TINY )
+target_include_directories(pendulum_example_tiny PRIVATE ../src )
+
+
 
 if (Eigen3_FOUND)
 add_executable(pendulum_example_eigen_gui pendulum_example_gui.cpp  ${TDS_HDRS})
@@ -45,6 +53,8 @@ target_link_libraries(tiny_urdf_parser_opengl_example  tinyxml2 opengl_window ${
 target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ../third_party/tinyobjloader)
 target_include_directories(tiny_urdf_parser_opengl_example PRIVATE ../third_party ../src)
 
+
+
 add_executable(opengl_imgui_test opengl_imgui_test.cpp ../third_party/dear_imgui/opengl3/imgui_impl_opengl3.cpp  ${TDS_HDRS})
 target_link_libraries(opengl_imgui_test opengl_window dear_imgui  ${CMAKE_DL_LIBS})
 target_include_directories(opengl_imgui_test PRIVATE ../third_party/glad ../third_party/dear_imgui ../src)
@@ -76,8 +86,20 @@ IF(USE_CPPAD)
       Eigen3::Eigen
       differentiation
   )
+  add_executable(cuda_ant_codegen cuda_ant_codegen.cpp ${TDS_HDRS})
+  target_compile_definitions(cuda_ant_codegen PRIVATE -DUSE_CPPAD)
+  target_link_libraries(
+    cuda_ant_codegen
+    PRIVATE
+      ${CMAKE_DL_LIBS}
+      opengl_window
+      tinyxml2
+      Eigen3::Eigen
+      differentiation
+  )
   if (USE_STAN)
     target_link_libraries(cuda_laikago_codegen PRIVATE ${STAN_LIBRARIES})
+    target_link_libraries(cuda_ant_codegen PRIVATE ${STAN_LIBRARIES})
   endif(USE_STAN)
 ENDIF(USE_CPPAD)
 
@@ -182,11 +204,26 @@ IF(USE_OSQP)
   ENDIF(USE_QPOASES)
 ENDIF(USE_OSQP)
 
+
+add_executable(environment_eval environment_eval.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc  ${TDS_HDRS}) 
+target_link_libraries(environment_eval  tinyxml2 opengl_window ${CMAKE_DL_LIBS}) 
+target_include_directories(environment_eval PRIVATE ../third_party/tinyobjloader)
+target_include_directories(environment_eval PRIVATE ../third_party ../src)
+
+
+
 IF(USE_PAGMO2)
   add_executable(pagmo2_example pagmo2_example.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc  ${TDS_HDRS} )
   target_link_libraries(pagmo2_example tinyxml2 Eigen3::Eigen Pagmo::pagmo ${CMAKE_DL_LIBS})
   target_include_directories(pagmo2_example PRIVATE ../src ../third_party/tinyobjloader ../third_party)
 IF (WIN32)
   target_compile_definitions(pagmo2_example PRIVATE -D_CPPUNWIND)
+ENDIF()
+
+  add_executable(environment_train_pagmo environment_train.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc  ${TDS_HDRS} )
+  target_link_libraries(environment_train_pagmo tinyxml2 Eigen3::Eigen Pagmo::pagmo ${CMAKE_DL_LIBS})
+  target_include_directories(environment_train_pagmo PRIVATE ../src ../third_party/tinyobjloader ../third_party)
+IF (WIN32)
+  target_compile_definitions(environment_train_pagmo PRIVATE -D_CPPUNWIND)
 ENDIF()
 ENDIF()

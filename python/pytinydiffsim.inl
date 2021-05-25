@@ -521,10 +521,9 @@
           &MultiBody<MyAlgebra>::get_position)
       .def("get_base_orientation",
           &MultiBody<MyAlgebra>::get_orientation)
-
       .def("get_world_transform",
            &MultiBody<MyAlgebra>::get_world_transform)
-
+      .def("get_world_com", &MultiBody<MyAlgebra>::get_world_com)
       .def("attach_link", &MultiBody<MyAlgebra>::attach_link)
       .def("set_q", &MultiBody<MyAlgebra>::set_q)
 #if 0
@@ -566,6 +565,9 @@
   m.def("sin", &MySin);
   m.def("max", &MyMax);
   m.def("min", &MyMin);
+  m.def("where_gt", &MyWhereGT);
+  m.def("where_lt", &MyWhereLT);
+  m.def("where_eq", &MyWhereEQ);
   m.def("clip", &MyClip);
 
   
@@ -690,7 +692,9 @@
       m, "TinyMultiBodyConstraintSolver")
       .def(py::init<>())
       .def("resolve_collision",
-           &MultiBodyConstraintSolver<MyAlgebra>::resolve_collision);
+           &MultiBodyConstraintSolver<MyAlgebra>::resolve_collision)
+      .def_readwrite("pgs_iterations_", &MultiBodyConstraintSolver<MyAlgebra>::pgs_iterations_)
+      .def_readwrite("keep_all_points_", &MultiBodyConstraintSolver<MyAlgebra>::keep_all_points_);
 
 #if 0
 
@@ -736,10 +740,15 @@
            &World<MyAlgebra>::compute_contacts_multi_body)
       .def("get_collision_dispatcher",
            &World<MyAlgebra>::get_collision_dispatcher)
+      .def("get_mb_constraint_solver",
+           &World<MyAlgebra>::get_mb_constraint_solver)
+      .def("set_mb_constraint_solver",
+           &World<MyAlgebra>::set_mb_constraint_solver)
       .def_readwrite("friction",
                      &World<MyAlgebra>::default_friction)
       .def_readwrite("restitution",
-                     &World<MyAlgebra>::default_restitution);
+                     &World<MyAlgebra>::default_restitution)
+      .def_readwrite("num_solver_iterations", &World<MyAlgebra>::num_solver_iterations);
 
   py::class_<TinyRaycastResult<MyScalar, MyTinyConstants>>(m, "TinyRaycastResult")
       .def(py::init<>())
@@ -892,11 +901,66 @@
           "name_to_link_index",
           &UrdfStructures<MyAlgebra>::name_to_link_index);
 
+
+
   py::class_<UrdfToMultiBody2<MyAlgebra>>(m, "UrdfToMultiBody2")
       .def(py::init<>())
       .def("convert2", &UrdfToMultiBody2<MyAlgebra>::convert);
 
+#ifdef ENABLE_TEST_ENVS
+  py::class_<CartpoleEnvOutput>(m, "CartpoleEnvOutput")
+      .def(py::init<>())
+      .def_readwrite("obs",
+                     &CartpoleEnvOutput::obs)
+      .def_readwrite("reward",
+                     &CartpoleEnvOutput::reward)
+      .def_readwrite("done",
+                     &CartpoleEnvOutput::done)
+      ;
+
+   py::class_<CartpoleRolloutOutput>(m, "CartpoleRolloutOutput")
+      .def(py::init<>())
+      .def_readwrite("total_reward",
+                     &CartpoleRolloutOutput::total_reward)
+      .def_readwrite("num_steps",
+                     &CartpoleRolloutOutput::num_steps)
+      ;
+
+  py::class_<CartpoleContactSimulation<MyAlgebra>>(m, "CartpoleSimulation")
+      .def(py::init<>())
+      .def_readwrite("m_urdf_filename",
+                     &CartpoleContactSimulation<MyAlgebra>::m_urdf_filename)
+      ;
+
+  py::class_<CartpoleEnv<MyAlgebra>>(m, "CartpoleEnv")
+      .def(py::init<CartpoleContactSimulation<MyAlgebra>&>())
+      .def("reset", &CartpoleEnv<MyAlgebra>::reset2)
+      .def("step", &CartpoleEnv<MyAlgebra>::step2)
+      .def("rollout", &CartpoleEnv<MyAlgebra>::rollout)
+      .def("update_weights", &CartpoleEnv<MyAlgebra>::init_neural_network)
+      .def("seed", &CartpoleEnv<MyAlgebra>::seed)
+      .def("init_neural_network", &CartpoleEnv<MyAlgebra>::init_neural_network)
+      .def("policy", &CartpoleEnv<MyAlgebra>::policy)
+      ;
   
+   py::class_<AntContactSimulation<MyAlgebra>>(m, "AntContactSimulation")
+      .def(py::init<>())
+      .def_readwrite("m_urdf_filename",
+                     &AntContactSimulation<MyAlgebra>::m_urdf_filename)
+      ;
+
+    py::class_<AntEnv<MyAlgebra>>(m, "AntEnv")
+      .def(py::init<AntEnv<MyAlgebra>&>())
+      .def("reset", &AntEnv<MyAlgebra>::reset)
+      .def("step", &AntEnv<MyAlgebra>::step2)
+      .def("rollout", &AntEnv<MyAlgebra>::rollout)
+      .def("update_weights", &AntEnv<MyAlgebra>::init_neural_network)
+      .def("seed", &AntEnv<MyAlgebra>::seed)
+      .def("init_neural_network", &AntEnv<MyAlgebra>::init_neural_network)
+      .def("policy", &AntEnv<MyAlgebra>::policy)
+      ;
+
+#endif//ENABLE_TEST_ENVS
 
 //////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////

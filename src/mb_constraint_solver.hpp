@@ -57,7 +57,8 @@ class MultiBodyConstraintSolver {
   SubmitProfileTiming profile_timing_func_{nullptr};
 
  public:
-  int pgs_iterations_{50};
+  bool keep_all_points_{false};
+  int pgs_iterations_{1};//increase if solver doesn't converge
   double least_squares_residual_threshold_{0};
   std::vector<int> limit_dependency_;
 
@@ -159,9 +160,22 @@ class MultiBodyConstraintSolver {
   // Args:
   // cps: contact points with distances < 0
   // dt : delta time (in seconds)
-  virtual void resolve_collision(const std::vector<ContactPoint>& cps,
+  virtual void resolve_collision(const std::vector<ContactPoint>& org_cps,
                                  const Scalar& dt) {
-    if (cps.empty()) return;
+ 
+    std::vector<ContactPoint> cps;
+
+    for (int i=0;i<org_cps.size();i++)
+    {
+        auto cp = org_cps[i];
+        
+        if (keep_all_points_ || cp.distance<Algebra::zero())
+            cps.push_back(org_cps[i]);
+    }
+
+    if (cps.empty()) 
+        return;
+
     const int n_c = static_cast<int>(cps.size());
 
     const ContactPoint& cp0 = cps[0];
@@ -254,7 +268,7 @@ class MultiBodyConstraintSolver {
 
       const Vector3& world_point_a = cp.world_point_on_a;
       Matrix3X jac_a = point_jacobian2(*mb_a, cp.link_a, world_point_a, false);
-      VectorX jac_a_i = Algebra::mul_transpose(jac_a, cp.world_normal_on_b);
+      VectorX jac_a_i = Algebra::mul_transpose(jac_a, cp.world_normal_on_b*collision);
       Algebra::assign_horizontal(jac_con, jac_a_i, i, 0);
 
       const Vector3& world_point_b = cp.world_point_on_b;
@@ -264,7 +278,7 @@ class MultiBodyConstraintSolver {
       //     point_jacobian_fd(*mb_b, mb_b->m_q, cp.link_b,
       //     world_point_b);
       // jac_b.print("jac_b");
-      VectorX jac_b_i = Algebra::mul_transpose(jac_b, cp.world_normal_on_b);
+      VectorX jac_b_i = Algebra::mul_transpose(jac_b, cp.world_normal_on_b*collision);
       // jac_b_i.print("jac_b_i");
 
       std::vector<Scalar> qd_empty;
@@ -291,40 +305,39 @@ class MultiBodyConstraintSolver {
                  baumgarte_rel_vel;
       lcp_b[i] *= collision;
 
-#if USE_PROJECTED_FRICTION_DIRECTION
+//#define USE_PROJECTED_FRICTION_DIRECTION
+#ifdef USE_PROJECTED_FRICTION_DIRECTION
 
       // friction direction
       Vector3 lateral_rel_vel = rel_vel - normal_rel_vel * cp.world_normal_on_b;
       // lateral_rel_vel.print("lateral_rel_vel");
-      const Scalar lateral = Algebra::norm(lateral_rel_vel);
+      Scalar lateral = Algebra::norm(lateral_rel_vel);
       // printf("Algebra::norm(lateral_rel_vel): %.6f\n",
       //        Algebra::getDouble(lateral));
 
       Vector3 fr_direction1,fr_direction2;
       //      cp.world_normal_on_b.print("contact normal");
       //      fflush(stdout);
-      if(lateral < Algebra::fraction(1,10000)) {
-          // use the plane space of the contact normal as friction directions
-          plane_space(cp.world_normal_on_b,fr_direction1,fr_direction2);
-      }
-      else {
+
+      lateral = where_lt(lateral, Algebra::fraction(1,1000000),
+                                        Algebra::one(), lateral);
+
+      //if(lateral < Algebra::fraction(1,10000)) {
+      //    // use the plane space of the contact normal as friction directions
+      //    plane_space(cp.world_normal_on_b,fr_direction1,fr_direction2);
+      //}
+      //else 
+      {
           // use the negative lateral velocity and its orthogonal as friction
           // directions
           fr_direction1 = lateral_rel_vel * (Algebra::one() / lateral);
-          fr_direction1 = Algebra::normalize(fr_direction1);
-          fr_direction2 = Algebra::cross(fr_direction1,cp.world_normal_on_b);
-          fr_direction2 = Algebra::normalize(fr_direction2);
+          //fr_direction1 = Algebra::normalize(fr_direction1);
+          //fr_direction2 = Algebra::cross(fr_direction1,cp.world_normal_on_b);
+          //fr_direction2 = Algebra::normalize(fr_direction2);
       }
 #else
       // friction direction
-      Vector3 lateral_rel_vel = rel_vel - normal_rel_vel * cp.world_normal_on_b;
-      // if constexpr (is_cppad_scalar<Scalar>::value) {
-      if constexpr (true) {
-        // add epsilon to make prevent division by zero in gradient of norm
-        lateral_rel_vel[2] += Algebra::fraction(1, 100000);
-      }
-      const Scalar lateral = Algebra::norm(lateral_rel_vel);
-
+    
       Vector3 fr_direction1, fr_direction2;
       plane_space(cp.world_normal_on_b, fr_direction1, fr_direction2);
       fr_direction1 *= collision;

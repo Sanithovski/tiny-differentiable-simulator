@@ -1163,9 +1163,9 @@ struct EigenAlgebraT {
     printf("%s\n", title.c_str());
     for (int r = 0; r < v.rows(); r++) {
         for (int c = 0; c < v.cols(); c++) {
-            Scalar s = v[r, c];
-            double d = to_double(s);
-            printf("%2.3f, ", d);
+            //Scalar s = v[r, c];
+            //double d = to_double(s);
+            //printf("%2.3f, ", d);
         }
         printf("\n");
     }

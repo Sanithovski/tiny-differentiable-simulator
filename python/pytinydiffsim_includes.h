@@ -18,7 +18,7 @@
 #include "math/pose.hpp"
 #include "math/tiny/tiny_quaternion.h"
 #include "math/tiny/tiny_raycast.h"
-#include "urdf/urdf_structures.hpp"
+#include "urdf_structures.hpp"
 #include "urdf/urdf_to_multi_body.hpp"
 #include "world.hpp"
 #include "tiny_inverse_kinematics.h"
@@ -29,6 +29,11 @@
 #include "dynamics/jacobian.hpp"
 #include "math/neural_network.hpp"
 #include "utils/file_utils.hpp"
+#ifdef ENABLE_TEST_ENVS
+#include "examples/environments/cartpole_environment.h"
+#include "examples/environments/ant_environment.h"
+#endif//ENABLE_CARTPOLE_TEST_ENV
+
 #ifdef _WIN32
 #undef min
 #undef max
@@ -174,6 +179,18 @@ MyScalar MyMax(MyScalar a, MyScalar b)
 MyScalar MyMin(MyScalar a, MyScalar b)
 {
     return MyAlgebra::min(a, b);
+}
+
+MyScalar MyWhereGT(MyScalar a, MyScalar b, MyScalar x, MyScalar y) {
+    return tds::where_gt(a, b, x, y);
+}
+
+MyScalar MyWhereLT(MyScalar a, MyScalar b, MyScalar x, MyScalar y) {
+    return tds::where_lt(a, b, x, y);
+}
+
+MyScalar MyWhereEQ(MyScalar a, MyScalar b, MyScalar x, MyScalar y) {
+    return tds::where_eq(a, b, x, y);
 }
 
 MyScalar MyClip(MyScalar v, MyScalar low, MyScalar high) {

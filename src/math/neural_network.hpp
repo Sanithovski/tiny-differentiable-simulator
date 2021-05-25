@@ -23,7 +23,7 @@
 #include <iostream>
 #include <random>
 #include <vector>
-
+#include <array>
 #include "math/conditionals.hpp"
 
 namespace tds {
@@ -125,7 +125,10 @@ class NeuralNetworkSpecification {
     }
   }
 
-  void set_input_dim(int dim) { layers_[0] = dim; }
+  void set_input_dim(int dim, bool use_input_bias = true) { 
+      layers_[0] = dim;
+      use_bias_[0] = use_input_bias;
+  }
 
   void add_linear_layer(NeuralNetworkActivation activation, int units,
                         bool learn_bias = true) {
@@ -387,8 +390,11 @@ class NeuralNetwork : public NeuralNetworkSpecification {
     this->template compute<Algebra>(weights, biases, input, output);
   }
 
+
   void set_parameters(const std::vector<typename Algebra::Scalar>& params) {
-    assert(static_cast<int>(params.size()) >= num_parameters());
+    int params_size = params.size();
+    int num_actual_params = num_parameters();
+    assert(static_cast<int>(params_size) >= num_actual_params);
     weights.resize(num_weights());
     biases.resize(num_biases());
     std::copy(params.begin(), params.begin() + num_weights(), weights.begin());
@@ -396,6 +402,12 @@ class NeuralNetwork : public NeuralNetworkSpecification {
               params.begin() + num_weights() + num_biases(), biases.begin());
   }
 
+  void get_parameters(std::vector<typename Algebra::Scalar>& params) {
+      int num_actual_params = num_parameters();
+      params.resize(num_actual_params);
+      std::copy(weights.begin(), weights.begin() + num_weights(), params.begin());
+      std::copy(biases.begin(),biases.begin()+num_biases(), params.begin() + num_weights());
+  }
   void print_params() const {
     printf("NN weights:  ");
     this->template print_states<Algebra>(weights);
