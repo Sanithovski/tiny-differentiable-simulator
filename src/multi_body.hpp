@@ -4,6 +4,7 @@
 #pragma once
 
 #include <vector>
+#include <set>
 
 #include "geometry.hpp"
 #include "link.hpp"
@@ -53,7 +54,7 @@ class MultiBody {
    * For floating-base system, the index 0 corresponds to the first degree of
    * freedom not part of the 6D floating-base coordinates.
    */
-  std::vector<int> control_indices_;
+  std::set<int> control_indices_;
 
   // quantities related to floating base
   mutable MotionVector base_velocity_;       // v_0
@@ -169,9 +170,16 @@ public:
     is_floating_ = is_floating;
   }
 
-  TINY_INLINE std::vector<int> control_indices() { return control_indices_; }
-  void set_control_indices(const std::vector<int> &control_indices) {
+  TINY_INLINE const std::set<int>& control_indices() { return control_indices_; }
+  void set_control_indices(const std::set<int> &control_indices) {
     control_indices_ = control_indices;
+    tau_ = Algebra::zerox(control_indices.size());
+  }
+  void set_control_indices(const std::vector<int> &control_indices) {
+    control_indices_.clear();
+    for (int i : control_indices) {
+      control_indices_.insert(i);
+    }
     tau_ = Algebra::zerox(control_indices.size());
   }
 
@@ -533,7 +541,8 @@ public:
                                         int link_index) const {
         const Link &link = links_[link_index];
 
-        if (Algebra::size(tau) == 0 || link.joint_type == JOINT_FIXED){
+        if (Algebra::size(tau) == 0 || link.joint_type == JOINT_FIXED
+          || control_indices_.find(link_index) == control_indices_.end()) {
             return link.joint_type == JOINT_SPHERICAL ? Algebra::zerox(3) : Algebra::zerox(1);
         }
         int offset = is_floating_ ? -6 : 0;
@@ -588,16 +597,16 @@ public:
       link.qd_index = dof_qd();
       dof_ += 3;
       ++spherical_joints_;
-      // not sure about this:
       if (is_controllable) {
         if (control_indices_.empty()) {
-          control_indices_.push_back(0);
-          control_indices_.push_back(control_indices_.back() + 1);
-          control_indices_.push_back(control_indices_.back() + 1);
+          control_indices_.insert(0);
+          control_indices_.insert(1);
+          control_indices_.insert(2);
         } else {
-          control_indices_.push_back(control_indices_.back() + 1);
-          control_indices_.push_back(control_indices_.back() + 1);
-          control_indices_.push_back(control_indices_.back() + 1);
+          int last_tau_index = *control_indices_.rbegin();
+          control_indices_.insert(last_tau_index + 1);
+          control_indices_.insert(last_tau_index + 2);
+          control_indices_.insert(last_tau_index + 3);
         }
       }
     }else if (link.joint_type != JOINT_FIXED) {
@@ -609,9 +618,10 @@ public:
       dof_++;
       if (is_controllable) {
         if (control_indices_.empty()) {
-          control_indices_.push_back(0);
+          control_indices_.insert(0);
         } else {
-          control_indices_.push_back(control_indices_.back() + 1);
+          int last_tau_index = *control_indices_.rbegin();
+          control_indices_.insert(last_tau_index + 1);
         }
       }
     } else {

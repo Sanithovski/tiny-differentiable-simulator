@@ -2,6 +2,7 @@
 
 #include "geometry.hpp"
 #include "math/conditionals.hpp"
+#include "math/pose.hpp"
 #include <cassert>
 
 namespace tds {

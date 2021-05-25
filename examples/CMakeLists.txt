@@ -35,6 +35,12 @@ target_include_directories(laikago_opengl_tiny_example PRIVATE ../third_party/ti
 target_include_directories(laikago_opengl_tiny_example PRIVATE ../third_party ../src)
 target_compile_definitions(laikago_opengl_tiny_example PRIVATE USE_TINY )
 
+add_executable(cartpole_ilqr cartpole_ilqr.cpp control/ilqr.cpp control/derivatives.cpp control/boxqp.cpp ../third_party/stb_image/stb_image.cpp ../third_party/tinyobjloader/tiny_obj_loader.cc  ${TDS_HDRS})
+target_link_libraries(cartpole_ilqr  Eigen3::Eigen tinyxml2 opengl_window ${CMAKE_DL_LIBS})
+target_include_directories(cartpole_ilqr PRIVATE ../third_party/tinyobjloader)
+target_include_directories(cartpole_ilqr PRIVATE ../third_party ../src)
+target_compile_definitions(cartpole_ilqr PRIVATE USE_TINY )
+
 endif()
 
 

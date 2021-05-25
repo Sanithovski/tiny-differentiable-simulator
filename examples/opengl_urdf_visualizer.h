@@ -284,16 +284,12 @@ struct OpenGLUrdfVisualizer {
       // sync base transform
       for (int v = 0; v < body->visual_instance_uids().size(); v++) {
           int visual_instance_id = body->visual_instance_uids()[v];
-            Quaternion rot;
             Transform geom_X_world =
                 body->base_X_world() * body->X_visuals()[v];
 
-            const TinyMatrix3& m =
-                geom_X_world.rotation;
-            m.getRotation(rot);
-            
+            Quaternion rot = Algebra::matrix_to_quat(geom_X_world.rotation);            
             ::TINY::TinyVector3f pos(geom_X_world.translation[0], geom_X_world.translation[1], geom_X_world.translation[2]);
-            ::TINY::TinyQuaternionf orn(rot[0], rot[1], rot[2], rot[3]);
+            ::TINY::TinyQuaternionf orn(Algebra::quat_x(rot), Algebra::quat_y(rot), Algebra::quat_z(rot), Algebra::quat_w(rot));
             m_opengl_app.m_renderer->write_single_instance_transform_to_cpu(pos, orn, visual_instance_id);
       }
 
@@ -302,15 +298,12 @@ struct OpenGLUrdfVisualizer {
               int visual_instance_id = body->links()[l].visual_instance_uids[v];
               if (visual_instance_id >= 0)
               {
-                  Quaternion rot;
                   Transform geom_X_world =
                       body->links()[l].X_world * body->links()[l].X_visuals[v];
-
-                  TinyMatrix3& m =
-                      geom_X_world.rotation;
-                  m.getRotation(rot);
+                  
+                  Quaternion rot = Algebra::matrix_to_quat(geom_X_world.rotation);
                   ::TINY::TinyVector3f pos(geom_X_world.translation[0], geom_X_world.translation[1], geom_X_world.translation[2]);
-                  ::TINY::TinyQuaternionf orn(rot[0], rot[1], rot[2], rot[3]);
+                  ::TINY::TinyQuaternionf orn(Algebra::quat_x(rot), Algebra::quat_y(rot), Algebra::quat_z(rot), Algebra::quat_w(rot));
                   m_opengl_app.m_renderer->write_single_instance_transform_to_cpu(pos, orn, visual_instance_id);
               }
           }
