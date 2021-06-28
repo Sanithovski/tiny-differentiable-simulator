@@ -2,15 +2,15 @@
 
 #include "inertia.hpp"
 #include "spatial_vector.hpp"
+#include "utils/serialization.hpp"
 
-// right-associative means transforms are multiplied like parent_transform * child_transform.
-// RBDL uses left-associative transforms
+// right-associative means transforms are multiplied like parent_transform *
+// child_transform. RBDL uses left-associative transforms
 //#define TDS_USE_LEFT_ASSOCIATIVE_TRANSFORMS
-
 
 namespace tds {
 template <typename Algebra>
-struct Transform {
+struct Transform : public Serializable<Algebra> {
   using Scalar = typename Algebra::Scalar;
   using Vector3 = typename Algebra::Vector3;
   using Matrix3 = typename Algebra::Matrix3;
@@ -18,6 +18,8 @@ struct Transform {
   using Matrix6x3 = typename Algebra::Matrix6x3;
   using RigidBodyInertia = tds::RigidBodyInertia<Algebra>;
   using ArticulatedBodyInertia = tds::ArticulatedBodyInertia<Algebra>;
+  using typename Serializable<Algebra>::Iter;
+  using typename Serializable<Algebra>::ConstIter;
   typedef tds::MotionVector<Algebra> MotionVector;
   typedef tds::ForceVector<Algebra> ForceVector;
 
@@ -125,7 +127,7 @@ struct Transform {
     /// right-associative
     Transform tr = *this;
     tr.translation += rotation * t.translation;
-    //tr.translation += Algebra::transpose(rotation) * t.translation;
+    // tr.translation += Algebra::transpose(rotation) * t.translation;
     tr.rotation *= t.rotation;
     return tr;
   }
@@ -135,11 +137,11 @@ struct Transform {
   TINY_INLINE Vector3 apply_inverse(const Vector3 &point) const {
     return Algebra::transpose(rotation) * (point - translation);
   }
-  TINY_INLINE Vector3 apply_inverse2(const Vector3& point) const {
-      return Algebra::transpose(rotation) * (point - translation);
+  TINY_INLINE Vector3 apply_inverse2(const Vector3 &point) const {
+    return Algebra::transpose(rotation) * (point - translation);
   }
 #else
-    // implementation from RBDL
+  // implementation from RBDL
   Transform operator*(const Transform &t) const {
     Transform tr = *this;
     // tr.translation = t.translation + t.rotation * translation;
@@ -149,20 +151,18 @@ struct Transform {
     return tr;
   }
 
-// Transform operator*(const Transform &t) const {
-//   Transform tr = *this;
-//   tr.translation = t.translation + t.rotation * translation;
-//   // tr.translation = t.translation + Algebra::transpose(t.rotation) * translation;
-//   tr.rotation *= t.rotation;
-//   return tr;
-// }
-// Transform operator*(const Transform &t) const {
-//   Transform tr = *this;
-//   tr.translation = t.translation + t.rotation * translation;
-//   tr.rotation *= t.rotation;
-//   return tr;
-// }
- 
+  // Transform operator*(const Transform &t) const {
+  //   Transform tr = *this;
+  //   tr.translation = t.translation + t.rotation * translation;
+  //   // tr.translation = t.translation + Algebra::transpose(t.rotation) *
+  //   translation; tr.rotation *= t.rotation; return tr;
+  // }
+  // Transform operator*(const Transform &t) const {
+  //   Transform tr = *this;
+  //   tr.translation = t.translation + t.rotation * translation;
+  //   tr.rotation *= t.rotation;
+  //   return tr;
+  // }
 
   TINY_INLINE Vector3 apply(const Vector3 &point) const {
     return rotation * point + translation;
@@ -280,15 +280,17 @@ struct Transform {
   }
 
   Matrix6x3 apply(const Matrix6x3 &inMat, bool is_force) const {
-    if (is_force) return apply_to_3d_force(inMat);
-    else return apply_to_3d_motion(inMat);
+    if (is_force)
+      return apply_to_3d_force(inMat);
+    else
+      return apply_to_3d_motion(inMat);
   }
 
   /**
    * F = fv(n, f)
    * XT*F = fv(ETn + rxETf, ETf)
    */
-  inline Matrix6x3 apply_to_3d_force(const Matrix6x3 &inMat) const{
+  inline Matrix6x3 apply_to_3d_force(const Matrix6x3 &inMat) const {
 #ifndef TDS_USE_LEFT_ASSOCIATIVE_TRANSFORMS
     const Matrix3 &Et = rotation;
 #else
@@ -311,7 +313,7 @@ struct Transform {
    * V = mv(w, v)
    * X*V = mv(E*w, E*(v - r x w))
    */
-  inline Matrix6x3 apply_to_3d_motion(const Matrix6x3 &inMat) const{
+  inline Matrix6x3 apply_to_3d_motion(const Matrix6x3 &inMat) const {
 #ifndef TDS_USE_LEFT_ASSOCIATIVE_TRANSFORMS
     Matrix3 E = Algebra::transpose(rotation);
 #else
@@ -331,14 +333,16 @@ struct Transform {
   }
 
   inline Matrix6x3 apply_inverse(const Matrix6x3 &inMat, bool is_force) const {
-    if (is_force) return apply_inverse_to_3d_force(inMat);
-    else return apply_inverse_to_3d_motion(inMat);
+    if (is_force)
+      return apply_inverse_to_3d_force(inMat);
+    else
+      return apply_inverse_to_3d_motion(inMat);
   }
 
   /**
-  * F = fv(n, f)
-  * X^* F = fv(E(n - rxf), Ef)
-  */
+   * F = fv(n, f)
+   * X^* F = fv(E(n - rxf), Ef)
+   */
   inline Matrix6x3 apply_inverse_to_3d_force(const Matrix6x3 &inMat) const {
 #ifndef TDS_USE_LEFT_ASSOCIATIVE_TRANSFORMS
     Matrix3 E = Algebra::transpose(rotation);
@@ -359,9 +363,9 @@ struct Transform {
   }
 
   /**
-  * V = mv(w, v)
-  * inv(X)*V = mv(ET*w, ET*v + r x (ET*w))
-  */
+   * V = mv(w, v)
+   * inv(X)*V = mv(ET*w, ET*v + r x (ET*w))
+   */
   inline Matrix6x3 apply_inverse_to_3d_motion(const Matrix6x3 &inMat) const {
 #ifndef TDS_USE_LEFT_ASSOCIATIVE_TRANSFORMS
     const Matrix3 &Et = rotation;
@@ -482,10 +486,51 @@ struct Transform {
     result.H = HrxM;
     return result;
   }
+
+  size_t serialization_size_(SerializationMode mode) const override {
+    return 7;
+  }
+
+  void serialize_(Iter &output, SerializationMode mode) const override {
+    for (int i = 0; i < 3; ++i) {
+      *output = translation[i];
+      output = std::next(output);
+    }
+
+    // convert rotation to quaternion
+    auto quat = Algebra::matrix_to_quat(rotation);
+    *output = Algebra::quat_x(quat);
+    output = std::next(output);
+    *output = Algebra::quat_y(quat);
+    output = std::next(output);
+    *output = Algebra::quat_z(quat);
+    output = std::next(output);
+    *output = Algebra::quat_w(quat);
+    output = std::next(output);
+  }
+
+  void deserialize_(ConstIter &input, SerializationMode mode) override {
+    for (int i = 0; i < 3; ++i) {
+      translation[i] = *input;
+      input = std::next(input);
+    }
+
+    // convert rotation to quaternion
+    Scalar qx = *input;
+    input = std::next(input);
+    Scalar qy = *input;
+    input = std::next(input);
+    Scalar qz = *input;
+    input = std::next(input);
+    Scalar qw = *input;
+    input = std::next(input);
+    auto quat = Algebra::quat_from_xyzw(qx, qy, qz, qw);
+    rotation = Algebra::quat_to_matrix(quat);
+  }
 };
 
 template <typename AlgebraFrom, typename AlgebraTo = AlgebraFrom>
-static TINY_INLINE Transform<AlgebraTo> clone(const Transform<AlgebraFrom>& x) {
+static TINY_INLINE Transform<AlgebraTo> clone(const Transform<AlgebraFrom> &x) {
   return x.template clone<AlgebraTo>();
 }
 }  // namespace tds

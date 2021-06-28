@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base.hpp"
+
 #if USE_STAN
 #include <stan/math.hpp>
 #include <stan/math/fwd.hpp>
@@ -22,8 +24,6 @@
 #include "spatial_vector.hpp"
 #undef max
 #undef min
-
-#include <cmath>
 
 
 namespace tds {
@@ -372,6 +372,10 @@ struct EigenAlgebraT {
   template <typename T>
   EIGEN_ALWAYS_INLINE static Scalar sqnorm(const T &v) {
     return v.squaredNorm();
+  }
+
+  EIGEN_ALWAYS_INLINE static auto normalize(const Vector3 &v) {
+    return v.normalized();
   }
 
   EIGEN_ALWAYS_INLINE static auto normalize(const Quaternion &q) {
