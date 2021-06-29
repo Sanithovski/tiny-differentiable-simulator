@@ -20,16 +20,6 @@ typedef TinyAlgebra<double, TINY::DoubleUtils> Algebra;
 using Vector3 = typename Algebra::Vector3;
 using namespace TINY;
 
-float simple_squared_distance(Vector3 p1, Vector3 p2) {
-  return sqrtf(pow(p1.x() - p2.x(), 2) + pow(p1.y() - p2.y(), 2) +
-               pow(p1.z() - p2.z(), 2));
-}
-
-double simple_sphere_function(Vector3 p) {
-  return simple_squared_distance(p, Vector3::zero()) - 1.0;
-}
-
-MC::FORMULA<Algebra> sphere_function(simple_sphere_function);
 
 int main(int argc, char **argv) {
   TinyOpenGL3App app("sdf_to_mesh_test", 1024, 768);
